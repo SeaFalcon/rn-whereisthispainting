@@ -6,12 +6,12 @@
  * @flow
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   View,
-  Animated,
   Dimensions,
+  Animated,
   ActivityIndicator,
 } from 'react-native';
 import {ParallaxSwiper, ParallaxSwiperPage} from 'react-native-parallax-swiper';
@@ -22,15 +22,15 @@ import API from './lib/api';
 const {width, height} = Dimensions.get('window');
 const paintingIds = [436535, 436528, 436532];
 
-export default class App extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      info: [],
-      isLoading: true,
-    };
-  }
-  componentDidMount() {
+export default function App2() {
+  const [state, setState] = useState({
+    info: [],
+    isLoading: true,
+  });
+
+  const {info, isLoading} = state;
+
+  useEffect(() => {
     Promise.all(
       paintingIds.map((id) => {
         API.get(`/objects/${id}`, {
@@ -42,20 +42,22 @@ export default class App extends React.Component {
         })
           .then((result) => result.data)
           .then((result) => {
-            this.setState({info: [...this.state.info, result]});
+            setState({...state, info: [...info, result]});
           });
       }),
     ).then(() => {
       setTimeout(() => {
-        this.setState({...this.state, isLoading: !this.state.isLoading});
+        setState({...state, isLoading: !isLoading});
       }, 3000);
     });
-  }
-  myCustomAnimationValue = new Animated.Value(0);
-  getPageTransformStyle = (index) => ({
+  });
+
+  const myCustomAnimationValue = new Animated.Value(0);
+
+  const getPageTransformStyle = (index) => ({
     transform: [
       {
-        scale: this.myCustomAnimationValue.interpolate({
+        scale: myCustomAnimationValue.interpolate({
           inputRange: [
             (index - 1) * (width + 8),
             index * (width + 8),
@@ -66,7 +68,7 @@ export default class App extends React.Component {
         }),
       },
       {
-        rotate: this.myCustomAnimationValue.interpolate({
+        rotate: myCustomAnimationValue.interpolate({
           inputRange: [
             (index - 1) * (width + 8),
             index * (width + 8),
@@ -78,48 +80,47 @@ export default class App extends React.Component {
       },
     ],
   });
-  render() {
-    return this.state.isLoading ? (
-      <View style={[styles.spinnerContainer, styles.horizontal]}>
-        <ActivityIndicator size="large" color="#00ffff" />
-      </View>
-    ) : (
-      <ParallaxSwiper
-        speed={0.5}
-        animatedValue={this.myCustomAnimationValue}
-        dividerWidth={8}
-        dividerColor="black"
-        backgroundColor="black"
-        onMomentumScrollEnd={(activePageIndex) => console.log(activePageIndex)}
-        progressBarBackgroundColor="rgba(0,0,0,0.25)"
-        progressBarValueBackgroundColor="white">
-        {this.state.info.map((element, index) => (
-          <ParallaxSwiperPage
-            BackgroundComponent={
-              <PaintingImage
-                id={element.ojbectId}
-                width={width}
-                height={height}
-                imageURL={element.primaryImage}
+
+  return isLoading ? (
+    <View style={[styles.spinnerContainer, styles.horizontal]}>
+      <ActivityIndicator size="large" color="#00ffff" />
+    </View>
+  ) : (
+    <ParallaxSwiper
+      speed={0.5}
+      animatedValue={myCustomAnimationValue}
+      dividerWidth={8}
+      dividerColor="black"
+      backgroundColor="black"
+      onMomentumScrollEnd={(activePageIndex) => console.log(activePageIndex)}
+      progressBarBackgroundColor="rgba(0,0,0,0.25)"
+      progressBarValueBackgroundColor="white">
+      {info.map((element, index) => (
+        <ParallaxSwiperPage
+          BackgroundComponent={
+            <PaintingImage
+              id={element.ojbectId}
+              width={width}
+              height={height}
+              imageURL={element.primaryImage}
+            />
+          }
+          ForegroundComponent={
+            <View style={styles.foregroundTextContainer}>
+              <PaintingInfo
+                id={element.objectId}
+                title={element.title}
+                artist={element.artistDisplayName}
+                year={element.objectEndDate}
+                location={element.repository}
               />
-            }
-            ForegroundComponent={
-              <View style={styles.foregroundTextContainer}>
-                <PaintingInfo
-                  id={element.objectId}
-                  title={element.title}
-                  artist={element.artistDisplayName}
-                  year={element.objectEndDate}
-                  location={element.repository}
-                />
-              </View>
-            }
-            key={index}
-          />
-        ))}
-      </ParallaxSwiper>
-    );
-  }
+            </View>
+          }
+          key={index}
+        />
+      ))}
+    </ParallaxSwiper>
+  );
 }
 
 const styles = StyleSheet.create({
